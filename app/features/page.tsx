@@ -22,7 +22,7 @@ import { MoveDirection, OutMode } from "@tsparticles/engine";
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/Footer";
 
-export function CardHoverEffectDemo() {
+function CardHoverEffectDemo() {
   return (
     <div className="max-w-5xl mx-auto px-8">
       <HoverEffect items={features} />

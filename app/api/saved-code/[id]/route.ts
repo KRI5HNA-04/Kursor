@@ -4,8 +4,9 @@ import { authOptions } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prisma";
 
 // GET: Get a single saved code snippet by id
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+  const { id } = await context.params;
     const session = await getServerSession({ req: request, ...authOptions });
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
     const code = await prisma.savedCode.findFirst({
-      where: { id: params.id, userId: user.id },
+      where: { id, userId: user.id },
     });
     if (!code) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -30,8 +31,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PUT: Update a saved code snippet by id
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+  const { id } = await context.params;
     const session = await getServerSession({ req: request, ...authOptions });
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -45,7 +47,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
     const { title, code, language } = await request.json();
     const updated = await prisma.savedCode.update({
-      where: { id: params.id },
+      where: { id },
       data: { title, code, language },
     });
     return NextResponse.json(updated);
@@ -55,8 +57,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE: Delete a saved code snippet by id
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+  const { id } = await context.params;
     const session = await getServerSession({ req: request, ...authOptions });
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -69,7 +72,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
     await prisma.savedCode.delete({
-      where: { id: params.id },
+      where: { id },
     });
     return NextResponse.json({ success: true });
   } catch (error) {
