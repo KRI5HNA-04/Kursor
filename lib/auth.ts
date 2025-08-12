@@ -8,6 +8,11 @@ import { NextAuthOptions } from "next-auth";
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   secret: process.env.NEXTAUTH_SECRET,
+  // In some hosted environments, setting trustHost helps with callback URL generation
+  // when relying on headers forwarded by the platform.
+  // Safe to enable for Vercel.
+  // @ts-ignore - available in recent next-auth v4
+  trustHost: true,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -40,7 +45,7 @@ export const authOptions: NextAuthOptions = {
     maxAge: 7 * 24 * 60 * 60,
     updateAge: 24 * 60 * 60,
   },
-  pages: { signIn: "/login" },
+  pages: { signIn: "/login", error: "/login" },
   callbacks: {
     async signIn({ account, profile }) {
       if (account?.provider === "google") {
@@ -81,5 +86,6 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  debug: process.env.NODE_ENV === "development",
+  // Enable verbose logs when NEXTAUTH_DEBUG=true (useful on Vercel)
+  debug: process.env.NEXTAUTH_DEBUG === "true",
 };
