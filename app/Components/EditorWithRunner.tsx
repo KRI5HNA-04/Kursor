@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 // Dynamically import Monaco to cut initial bundle
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 import { useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 import Split from "react-split";
 import { Settings } from "lucide-react";
 
@@ -10,6 +11,7 @@ const languageMap: Record<string, number> = {
   javascript: 93,
   python: 71,
   cpp: 54,
+  java: 62, // Judge0: Java (OpenJDK)
 };
 
 const codeTemplates: Record<string, string> = {
@@ -21,6 +23,17 @@ using namespace std;
 int main() {
     cout << "Hello World" << endl;
     return 0;
+}`,
+  java: `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        // Example: read one line from stdin
+        String line = sc.hasNextLine() ? sc.nextLine() : "";
+        System.out.println("Hello World" + (line.isEmpty() ? "" : ", " + line));
+        sc.close();
+    }
 }`,
 };
 
@@ -47,6 +60,8 @@ type SavedCode = {
 };
 
 export default function EditorWithRunner() {
+  const { data: session } = useSession();
+  const isLoggedIn = !!session?.user?.email;
   const [language, setLanguage] = useState("javascript");
   const [code, setCode] = useState(codeTemplates["javascript"]);
   const [input, setInput] = useState("");
@@ -72,6 +87,19 @@ export default function EditorWithRunner() {
   const [snippetTitle, setSnippetTitle] = useState("");
   const [renameTitle, setRenameTitle] = useState("");
   const [snippetLoading, setSnippetLoading] = useState(false);
+  // Lightweight toast
+  const [toast, setToast] = useState<{
+    msg: string;
+    type?: "info" | "success" | "error";
+  } | null>(null);
+  const showToast = (
+    msg: string,
+    type: "info" | "success" | "error" = "info"
+  ) => {
+    setToast({ msg, type });
+    window.clearTimeout((showToast as any)._t);
+    (showToast as any)._t = window.setTimeout(() => setToast(null), 3000);
+  };
   const editorRef = useRef<any>(null);
 
   // Register custom themes with Monaco
@@ -294,6 +322,18 @@ export default function EditorWithRunner() {
         setShowSaveModal(false);
         setSnippetTitle("");
         fetchSnippets();
+        showToast("Snippet saved", "success");
+      } else {
+        if (res.status === 401) {
+          showToast("Kindly log in first", "error");
+          return;
+        }
+        try {
+          const data = await res.json();
+          showToast(data?.error || "Failed to save snippet", "error");
+        } catch {
+          showToast("Failed to save snippet", "error");
+        }
       }
     } finally {
       setSnippetLoading(false);
@@ -348,6 +388,20 @@ export default function EditorWithRunner() {
 
   return (
     <div className="scroll-locking mt-10 h-[calc(100vh-120px)] bg-gradient-to-br from-[#0f0f11] via-[#1c1c1e] to-[#0f0f11] text-white font-mono overflow-hidden">
+      {toast && (
+        <div
+          className={`fixed top-5 right-5 z-50 rounded-md px-4 py-2 shadow-lg border backdrop-blur-sm
+            ${
+              toast.type === "success"
+                ? "bg-emerald-600/90 border-emerald-400/40"
+                : toast.type === "error"
+                ? "bg-red-600/90 border-red-400/40"
+                : "bg-zinc-700/90 border-zinc-500/40"
+            }`}
+        >
+          <span className="text-sm font-semibold text-white">{toast.msg}</span>
+        </div>
+      )}
       <header className="scroll-locking flex justify-between items-center px-6 py-4 shadow-lg backdrop-blur-sm bg-[#1a1a1acc] sticky top-0 z-20 border-b border-[#2c2c2e]">
         <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
           Kursor Editor
@@ -361,6 +415,7 @@ export default function EditorWithRunner() {
             <option value="javascript">JavaScript</option>
             <option value="python">Python</option>
             <option value="cpp">C++</option>
+            <option value="java">Java</option>
           </select>
           <button
             onClick={runCode}
@@ -417,7 +472,13 @@ export default function EditorWithRunner() {
             My Snippets
           </button>
           <button
-            onClick={() => setShowSaveModal(true)}
+            onClick={() => {
+              if (!isLoggedIn) {
+                showToast("Kindly log in first", "error");
+                return;
+              }
+              setShowSaveModal(true);
+            }}
             className="px-4 py-2 rounded bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md"
           >
             Save
