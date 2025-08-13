@@ -369,9 +369,9 @@ export default function EditorWithRunner() {
               ${
                 isRunning
                   ? "cursor-not-allowed bg-gray-600"
-                  : "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 active:scale-95"
+                  : "bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-400 hover:to-fuchsia-500 active:scale-95"
               }
-              text-white shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-400`}
+        text-white shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-violet-400`}
           >
             <span className="relative z-10 flex items-center gap-1">
               {isRunning ? (
@@ -405,20 +405,20 @@ export default function EditorWithRunner() {
           </button>
           <button
             onClick={() => setShowSettings(true)}
-            className="p-2 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm shadow-md focus:outline-none focus:ring-2 focus:ring-purple-400 flex items-center justify-center"
+            className="p-2 rounded-full bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm shadow-md focus:outline-none focus:ring-2 focus:ring-violet-400 flex items-center justify-center"
             title="Editor Settings"
           >
             <Settings size={20} />
           </button>
           <button
             onClick={() => setShowSnippets(true)}
-            className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md"
+            className="px-4 py-2 rounded bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md"
           >
             My Snippets
           </button>
           <button
             onClick={() => setShowSaveModal(true)}
-            className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-md"
+            className="px-4 py-2 rounded bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md"
           >
             Save
           </button>
@@ -605,7 +605,7 @@ export default function EditorWithRunner() {
                     </div>
                     <div className="flex gap-2 ml-4">
                       <button
-                        className="px-2 py-1 rounded bg-yellow-600 hover:bg-yellow-700 text-xs"
+                        className="px-2 py-1 rounded bg-violet-600 hover:bg-violet-700 text-xs text-white"
                         onClick={() => {
                           setSelectedSnippet(snippet);
                           setRenameTitle(snippet.title);
@@ -615,7 +615,7 @@ export default function EditorWithRunner() {
                         Rename
                       </button>
                       <button
-                        className="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-xs"
+                        className="px-2 py-1 rounded border border-violet-500/50 text-violet-300 hover:bg-violet-500/10 text-xs"
                         onClick={() => handleDeleteSnippet(snippet.id)}
                       >
                         Delete
@@ -648,7 +648,7 @@ export default function EditorWithRunner() {
               onChange={(e) => setSnippetTitle(e.target.value)}
             />
             <button
-              className="w-full py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+              className="w-full py-2 rounded bg-violet-600 hover:bg-violet-700 text-white font-semibold"
               onClick={handleSaveSnippet}
               disabled={!snippetTitle || snippetLoading}
             >
@@ -677,7 +677,7 @@ export default function EditorWithRunner() {
               onChange={(e) => setRenameTitle(e.target.value)}
             />
             <button
-              className="w-full py-2 rounded bg-yellow-600 hover:bg-yellow-700 text-white font-semibold"
+              className="w-full py-2 rounded bg-violet-600 hover:bg-violet-700 text-white font-semibold"
               onClick={handleUpdateSnippet}
               disabled={!renameTitle || snippetLoading}
             >
