@@ -150,6 +150,207 @@ export default function EditorWithRunner() {
         "editor.inactiveSelectionBackground": "#49483e99",
       },
     });
+
+    // Configure JS/TS IntelliSense in browser
+    try {
+      const ts = monaco.languages.typescript;
+      const tsOptions = {
+        target: ts.ScriptTarget.ES2021,
+        allowJs: true,
+        checkJs: true,
+        jsx: ts.JsxEmit.ReactJSX,
+        lib: ["es2021", "dom"],
+        noEmit: true,
+        moduleResolution: ts.ModuleResolutionKind.NodeJs,
+      };
+      ts.javascriptDefaults.setCompilerOptions(tsOptions);
+      ts.typescriptDefaults.setCompilerOptions(tsOptions);
+      ts.javascriptDefaults.setDiagnosticsOptions({
+        noSemanticValidation: false,
+        noSyntaxValidation: false,
+      });
+      ts.typescriptDefaults.setDiagnosticsOptions({
+        noSemanticValidation: false,
+        noSyntaxValidation: false,
+      });
+    } catch {}
+
+    // Helper to compute completion range
+    const getRange = (model: any, position: any) => {
+      const word = model.getWordUntilPosition(position);
+      return new monaco.Range(
+        position.lineNumber,
+        word.startColumn,
+        position.lineNumber,
+        word.endColumn
+      );
+    };
+
+    // Register lightweight snippet completions for each language
+    const S = monaco.languages.CompletionItemKind;
+    const R = monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet;
+
+    // JavaScript
+    monaco.languages.registerCompletionItemProvider("javascript", {
+      provideCompletionItems(model: any, position: any) {
+        const range = getRange(model, position);
+        return {
+          suggestions: [
+            {
+              label: "log",
+              kind: S.Snippet,
+              insertTextRules: R,
+              insertText: "console.log(${1:msg});",
+              documentation: "console.log",
+              range,
+            },
+            {
+              label: "fori",
+              kind: S.Snippet,
+              insertTextRules: R,
+              insertText:
+                "for (let i = 0; i < ${1:arr}.length; i++) {\n  const ${2:el} = ${1:arr}[i];\n  ${3}\n}",
+              documentation: "for index loop",
+              range,
+            },
+            {
+              label: "asyncfn",
+              kind: S.Snippet,
+              insertTextRules: R,
+              insertText: "async function ${1:name}(${2:args}) {\n  ${3}\n}",
+              documentation: "async function",
+              range,
+            },
+            {
+              label: "trycatch",
+              kind: S.Snippet,
+              insertTextRules: R,
+              insertText:
+                "try {\n  ${1}\n} catch (e) {\n  console.error(e);\n}",
+              documentation: "try/catch",
+              range,
+            },
+          ],
+        };
+      },
+    });
+
+    // Python
+    monaco.languages.registerCompletionItemProvider("python", {
+      provideCompletionItems(model: any, position: any) {
+        const range = getRange(model, position);
+        return {
+          suggestions: [
+            {
+              label: "print",
+              kind: S.Snippet,
+              insertTextRules: R,
+              insertText: 'print(${1:"Hello World"})',
+              documentation: "print",
+              range,
+            },
+            {
+              label: "def",
+              kind: S.Snippet,
+              insertTextRules: R,
+              insertText: "def ${1:name}(${2:args}):\n    ${3:pass}",
+              documentation: "function",
+              range,
+            },
+            {
+              label: "fori",
+              kind: S.Snippet,
+              insertTextRules: R,
+              insertText: "for i in range(${1:n}):\n    ${2:pass}",
+              documentation: "for loop",
+              range,
+            },
+            {
+              label: "ifmain",
+              kind: S.Snippet,
+              insertTextRules: R,
+              insertText: 'if __name__ == "__main__":\n    ${1:main()}',
+              documentation: "entrypoint",
+              range,
+            },
+          ],
+        };
+      },
+    });
+
+    // C++
+    monaco.languages.registerCompletionItemProvider("cpp", {
+      provideCompletionItems(model: any, position: any) {
+        const range = getRange(model, position);
+        return {
+          suggestions: [
+            {
+              label: "main",
+              kind: S.Snippet,
+              insertTextRules: R,
+              insertText:
+                "#include <iostream>\nusing namespace std;\n\nint main() {\n    ${1:// code}\n    return 0;\n}",
+              documentation: "main function",
+              range,
+            },
+            {
+              label: "cout",
+              kind: S.Snippet,
+              insertTextRules: R,
+              insertText: 'cout << ${1:"Hello"} << endl;',
+              documentation: "cout",
+              range,
+            },
+            {
+              label: "fori",
+              kind: S.Snippet,
+              insertTextRules: R,
+              insertText:
+                "for (int i = 0; i < ${1:n}; ++i) {\n    ${2}// code\n}",
+              documentation: "for loop",
+              range,
+            },
+          ],
+        };
+      },
+    });
+
+    // Java
+    monaco.languages.registerCompletionItemProvider("java", {
+      provideCompletionItems(model: any, position: any) {
+        const range = getRange(model, position);
+        return {
+          suggestions: [
+            {
+              label: "main",
+              kind: S.Snippet,
+              insertTextRules: R,
+              insertText:
+                "public class Main {\n    public static void main(String[] args) {\n        ${1:// code}\n    }\n}",
+              documentation: "main class",
+              range,
+            },
+            {
+              label: "sout",
+              kind: S.Snippet,
+              insertTextRules: R,
+              insertText: 'System.out.println(${1:"Hello"});',
+              documentation: "System.out.println",
+              range,
+            },
+            {
+              label: "fori",
+              kind: S.Snippet,
+              insertTextRules: R,
+              insertText:
+                "for (int i = 0; i < ${1:n}; i++) {\n    ${2}// code\n}",
+              documentation: "for loop",
+              range,
+            },
+          ],
+        };
+      },
+    });
   }
 
   // Modal close on outside click
@@ -771,7 +972,7 @@ export default function EditorWithRunner() {
                     onChange={(v) => setCode(v || "")}
                     options={{
                       fontSize,
-                      minimap: { enabled: false },
+                      minimap: { enabled: true },
                       fontFamily: editorFont,
                       smoothScrolling: true,
                       wordWrap: lineWrapping ? "on" : "off",
@@ -780,6 +981,7 @@ export default function EditorWithRunner() {
                       autoClosingBrackets: autocomplete ? "always" : "never",
                       quickSuggestions: autocomplete,
                       suggestOnTriggerCharacters: autocomplete,
+                      inlineSuggest: { enabled: true },
                       formatOnType: linting,
                       formatOnPaste: linting,
                     }}
