@@ -68,19 +68,14 @@ function NavbarInner() {
             >
               <Image
                 src={
-                  session.user.image &&
-                  (session.user.image.startsWith("http") ||
-                    session.user.image.startsWith("data:image"))
-                    ? session.user.image
-                    : `https://ui-avatars.com/api/?format=png&name=${encodeURIComponent(
-                        session.user.name || "User"
-                      )}`
+                  ("/api/profile/avatar?ts=" + Date.now()) as unknown as string
                 }
                 alt="Profile"
                 width={40}
                 height={40}
                 className="w-10 h-10 rounded-full object-cover"
                 priority={false}
+                unoptimized
               />
             </button>
             {dropdownOpen && (

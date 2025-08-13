@@ -57,7 +57,7 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger, session }) {
       if (user) {
         token.name = user.name;
         token.email = user.email;
@@ -65,6 +65,14 @@ export const authOptions: NextAuthOptions = {
         token.uid = (user as any).id;
         // @ts-ignore
         token.picture = (user as any).image || token.picture;
+      }
+      // When the client calls useSession().update(data), NextAuth passes trigger==='update'
+      // and the partial session in 'session'. Use this to refresh token values like picture.
+      if (trigger === "update" && session) {
+        // @ts-ignore
+        if (session.name) token.name = session.name as string;
+        // @ts-ignore
+        if (session.image) token.picture = session.image as string;
       }
       if (account?.provider === "google" && token.picture && token.picture.length > 500) {
         token.picture = `https://ui-avatars.com/api/?format=png&name=${encodeURIComponent(

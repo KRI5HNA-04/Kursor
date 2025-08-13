@@ -114,7 +114,11 @@ export default function ProfilePage() {
       setMessage("Profile updated successfully!");
       setNewImage(null);
       if (typeof update === "function") {
-        await update();
+        // Pass changes so NextAuth can propagate into the JWT via trigger==='update'
+        await update({
+          name: profileData.name,
+          image: profileData.image || null,
+        } as any);
       }
     } catch (e) {
       setError("An error occurred while updating profile.");
@@ -220,7 +224,7 @@ export default function ProfilePage() {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm font-medium mb-2">
                     <User size={16} />
                     Full Name
                   </label>
@@ -250,7 +254,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm font-medium mb-2">
                     <Phone size={16} />
                     Mobile Number
                   </label>
@@ -272,7 +276,7 @@ export default function ProfilePage() {
             {/* Right Column */}
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <label className="flex items-center gap-2 text-sm font-medium mb-2">
                   <FileText size={16} />
                   Bio
                 </label>
@@ -291,7 +295,7 @@ export default function ProfilePage() {
                   Social Media
                 </h3>
                 <div>
-                  <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm font-medium mb-2">
                     <Github size={16} />
                     GitHub Profile
                   </label>
@@ -309,7 +313,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm font-medium mb-2">
                     <Linkedin size={16} />
                     LinkedIn Profile
                   </label>
