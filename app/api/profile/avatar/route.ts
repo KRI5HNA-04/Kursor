@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession({ req: request, ...authOptions });
     const name = session?.user?.name || "User";
     const serveBuffer = (buf: Buffer, contentType = "image/png") =>
-      new Response(buf, {
+      new Response(new Uint8Array(buf), {
         status: 200,
         headers: { "Content-Type": contentType, "Cache-Control": "no-store" },
       });

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Split from "react-split";
 import { Settings } from "lucide-react";
+import Tooltip from "@mui/material/Tooltip";
 
 const languageMap: Record<string, number> = {
   javascript: 93,
@@ -439,14 +440,37 @@ export default function EditorWithRunner() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Run code: Ctrl+'
       if (e.ctrlKey && (e.key === "'" || e.code === "Apostrophe")) {
         e.preventDefault();
         if (!isRunning) runCode();
       }
+      // Save snippet: Ctrl+S
+      if (e.ctrlKey && (e.key === "s" || e.code === "KeyS")) {
+        e.preventDefault();
+        if (showSaveModal) {
+          // If modal is open, save directly
+          if (!snippetTitle || snippetLoading) return;
+          handleSaveSnippet();
+        } else {
+          if (!isLoggedIn) {
+            showToast("Kindly log in first", "error");
+            return;
+          }
+          setShowSaveModal(true);
+        }
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isRunning, runCode]);
+  }, [
+    isRunning,
+    runCode,
+    showSaveModal,
+    snippetTitle,
+    snippetLoading,
+    isLoggedIn,
+  ]);
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -604,11 +628,12 @@ export default function EditorWithRunner() {
         </div>
       )}
       <header className="scroll-locking flex justify-between items-center px-6 py-4 shadow-lg backdrop-blur-sm bg-[#1a1a1acc] sticky top-0 z-20 border-b border-[#2c2c2e]">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent whitespace-nowrap pr-10">
           Kursor Editor
         </h1>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between gap-4 w-full">
           <select
+            style={{ cursor: "pointer" }}
             value={language}
             onChange={handleLanguageChange}
             className="bg-[#2c2c2e] border border-[#3c3c3e] px-3 py-1 rounded text-sm focus:outline-none focus:ring focus:ring-purple-500"
@@ -618,72 +643,90 @@ export default function EditorWithRunner() {
             <option value="cpp">C++</option>
             <option value="java">Java</option>
           </select>
-          <button
-            onClick={runCode}
-            disabled={isRunning}
-            className={`relative px-6 py-2 rounded-full text-sm font-semibold transition-all duration-300 ease-in-out
-              ${
-                isRunning
-                  ? "cursor-not-allowed bg-gray-600"
-                  : "bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-400 hover:to-fuchsia-500 active:scale-95"
-              }
-        text-white shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-violet-400`}
-          >
-            <span className="relative z-10 flex items-center gap-1">
-              {isRunning ? (
-                <>
-                  <svg
-                    className="animate-spin h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                    ></path>
-                  </svg>
-                  Running...
-                </>
-              ) : (
-                <>Run ▶</>
-              )}
-            </span>
-          </button>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="p-2 rounded-full bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm shadow-md focus:outline-none focus:ring-2 focus:ring-violet-400 flex items-center justify-center"
-            title="Editor Settings"
-          >
-            <Settings size={20} />
-          </button>
-          <button
-            onClick={() => setShowSnippets(true)}
-            className="px-4 py-2 rounded bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md"
-          >
-            My Snippets
-          </button>
-          <button
-            onClick={() => {
-              if (!isLoggedIn) {
-                showToast("Kindly log in first", "error");
-                return;
-              }
-              setShowSaveModal(true);
-            }}
-            className="px-4 py-2 rounded bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md"
-          >
-            Save
-          </button>
+          <div className="flex-1 flex justify-center">
+            <Tooltip title={"Shortcut: Ctrl + '"} arrow placement="bottom">
+              <span>
+                <button
+                  style={{ cursor: "pointer" }}
+                  onClick={runCode}
+                  disabled={isRunning}
+                  className={`relative px-6 py-2 rounded-full text-sm font-semibold transition-all duration-300 ease-in-out
+                    ${
+                      isRunning
+                        ? "cursor-not-allowed bg-gray-600"
+                        : "bg-gradient-to-r from-violet-500 to-fuchsia-600 hover:from-violet-400 hover:to-fuchsia-500 active:scale-95"
+                    }
+                    text-white shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-violet-400`}
+                >
+                  <span className="relative z-10 flex items-center gap-1">
+                    {isRunning ? (
+                      <>
+                        <svg
+                          className="animate-spin h-4 w-4 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                          ></path>
+                        </svg>
+                        Running...
+                      </>
+                    ) : (
+                      <>Run ▶</>
+                    )}
+                  </span>
+                </button>
+              </span>
+            </Tooltip>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              style={{ cursor: "pointer" }}
+              onClick={() => setShowSettings(true)}
+              className="p-2 rounded-full bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm shadow-md focus:outline-none focus:ring-2 focus:ring-violet-400 flex items-center justify-center"
+              title="Editor Settings"
+            >
+              <Settings size={20} />
+            </button>
+            <button
+              style={{ cursor: "pointer" }}
+              onClick={() => setShowSnippets(true)}
+              className="px-4 py-2 rounded bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md"
+            >
+              My Snippets
+            </button>
+            <Tooltip title={"Shortcut: Ctrl + '"} arrow placement="bottom">
+              <span>
+                <button
+                  style={{
+                    cursor: "pointer",
+                  }}
+                  onClick={() => {
+                    if (!isLoggedIn) {
+                      showToast("Kindly log in first", "error");
+                      return;
+                    }
+                    setShowSaveModal(true);
+                  }}
+                  className="px-4 py-2 rounded bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-md"
+                >
+                  Save
+                </button>
+              </span>
+            </Tooltip>{" "}
+          </div>
         </div>
       </header>
 
