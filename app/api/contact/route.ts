@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
-
-export const runtime = "nodejs"; // Nodemailer requires Node.js runtime, not Edge
+import { Resend } from "resend";
 
 export async function POST(req: Request) {
   try {
-    const isDev = process.env.NODE_ENV !== "production";
-  const useEthereal = isDev && process.env.USE_ETHEREAL === "true";
     let body: any;
     try {
       body = await req.json();
@@ -29,103 +25,74 @@ export async function POST(req: Request) {
       );
     }
 
-    // Configure nodemailer transporter
-    let transporter: nodemailer.Transporter;
-    let toAddress = process.env.CONTACT_ADMIN_EMAIL;
-
-    if (useEthereal) {
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-      // Default toAddress to the ethereal account so we can preview the message
-      toAddress = testAccount.user;
-    } else {
-      const requiredEnv = [
-        "SMTP_HOST",
-        "SMTP_PORT",
-        "SMTP_USER",
-        "SMTP_PASS",
-        "CONTACT_ADMIN_EMAIL",
-      ] as const;
-      const missing = requiredEnv.filter((k) => !process.env[k]);
-      if (missing.length) {
-        return NextResponse.json(
-          {
-            error: "Server email configuration is missing",
-            ...(isDev && { details: `Missing env: ${missing.join(", ")}` }),
-          },
-          { status: 500 }
-        );
-      }
-
-      transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT),
-        secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
+    // Check for required environment variables
+    if (!process.env.RESEND_API_KEY) {
+      console.error("Missing RESEND_API_KEY environment variable");
+      return NextResponse.json(
+        { error: "Server email configuration is missing" },
+        { status: 500 }
+      );
     }
 
-    // Optionally verify transporter in dev to expose clearer errors
-  if (isDev && !useEthereal && process.env.SMTP_SKIP_VERIFY !== "true") {
-      try {
-        await transporter.verify();
-      } catch (e: any) {
-        console.error("SMTP verify failed:", e);
-        return NextResponse.json(
-          {
-            error: "Email transport verification failed",
-            details: e?.message ?? String(e),
-            code: e?.code,
-            response: e?.response,
-            responseCode: e?.responseCode,
-          },
-          { status: 500 }
-        );
-      }
+    if (!process.env.CONTACT_ADMIN_EMAIL) {
+      console.error("Missing CONTACT_ADMIN_EMAIL environment variable");
+      return NextResponse.json(
+        { error: "Server email configuration is missing" },
+        { status: 500 }
+      );
     }
 
-    // Send mail
-    const info = await transporter.sendMail({
-      from: `Kursor Contact <${process.env.SMTP_USER}>`,
-      to: toAddress,
+    // Initialize Resend
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
+    // Send email using Resend
+    const { data, error } = await resend.emails.send({
+      from: 'Kursor Contact <onboarding@resend.dev>', // Default Resend sender
+      to: [process.env.CONTACT_ADMIN_EMAIL],
       replyTo: email,
       subject: `New Contact Form Submission from ${name}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">New Contact Form Submission</h2>
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Message:</strong></p>
+            <div style="background: white; padding: 15px; border-radius: 4px; border-left: 4px solid #6366f1;">
+              ${message.replace(/\n/g, "<br/>")}
+            </div>
+          </div>
+          <p style="margin-top: 20px; font-size: 12px; color: #666;">
+            This email was sent from the Kursor contact form.
+          </p>
+        </div>
+      `,
       text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
-      html: `<p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p><strong>Message:</strong><br/>${message.replace(
-        /\n/g,
-        "<br/>"
-      )}</p>`,
     });
 
-    const previewUrl = useEthereal
-      ? nodemailer.getTestMessageUrl(info) || undefined
-      : undefined;
+    if (error) {
+      console.error("Resend API error:", error);
+      return NextResponse.json(
+        {
+          error: "Failed to send message",
+          details: process.env.NODE_ENV !== "production" ? error.message : undefined,
+        },
+        { status: 500 }
+      );
+    }
 
-    return NextResponse.json({ success: true, ...(previewUrl && { previewUrl }) });
+    console.log("Email sent successfully:", data);
+    return NextResponse.json({ success: true, messageId: data?.id });
+
   } catch (error) {
     console.error("/api/contact error:", error);
     return NextResponse.json(
       {
         error: "Failed to send message",
-        ...(process.env.NODE_ENV !== "production" && {
-          details: (error as any)?.message ?? String(error),
-          code: (error as any)?.code,
-          response: (error as any)?.response,
-          responseCode: (error as any)?.responseCode,
-        }),
+        details: process.env.NODE_ENV !== "production" ? 
+          (error as any)?.message ?? String(error) : undefined,
       },
       { status: 500 }
     );
   }
-} 
+}
